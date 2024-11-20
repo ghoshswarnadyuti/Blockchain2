@@ -1,0 +1,30 @@
+module CA3-CONTRACT
+    imports EVM
+
+    // Define the contract state with `owner` and `balance`
+    syntax Account ::= CA3(owner: Address, balance: Int)
+    // Define the withdraw action
+    syntax Action ::= "withdraw" "(" Address "," Int ")"
+    syntax Account ::= withdraw(Account, Address, Int) [function]
+
+    // Rule to allow `withdraw` only if the caller is the owner
+    rule <k> withdraw(TO, AMOUNT) => . ... </k>
+         <caller> CALLER </caller>
+         <account> CA3(OWNER, BAL) </account>
+         <balance> BAL </balance>
+         requires CALLER == OWNER
+         requires BAL >= AMOUNT
+         ensures BAL -Int AMOUNT >=Int 0 // prevent underflow
+
+    // Rule to revert `withdraw` if the caller is not the owner
+    rule <k> withdraw(TO, AMOUNT) => revert ... </k>
+         <caller> CALLER </caller>
+         <account> CA3(OWNER, _) </account>
+         requires CALLER =/=K OWNER
+
+    // Rule to revert if balance is insufficient
+    rule <k> withdraw(TO, AMOUNT) => revert ... </k>
+         <caller> CALLER </caller>
+         <account> CA3(OWNER, BAL) </account>
+         requires CALLER == OWNER
+         requires BAL < AMOUNT
